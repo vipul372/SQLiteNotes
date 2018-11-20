@@ -2,5 +2,16 @@
     <string name="app_name">Notes++</string>
     <string name="action_create_note">Make a note</string>
     <string name="title_activity_editor">Edit your note</string>
+    <string name="editor_activity_title_new_note">Add a Note</string>
+    <string name="editor_activity_title_edit_note">Edit Note</string>
+    <string name="action_delete">Delete Note</string>
+    <string name="delete_dialog_msg">Delete this note ?</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="editor_delete_pet_failed">Delete failed!!</string>
+    <string name="editor_delete_pet_successful">Note deleted</string>
+    <string name="unsaved_changes_dialog_msg">Discard your changes and quit editing ?</string>
+    <string name="discard">Discard</string>
+    <string name="keep_editing">Keep editing</string>
 
 </resources>

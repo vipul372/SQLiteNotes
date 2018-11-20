@@ -21,6 +21,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".EditorActivity"
             android:label="@string/title_activity_editor"
@@ -30,6 +31,12 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.example.vipul.notes.MainActivity" />
         </activity>
+
+        <provider
+            android:name=".data.NoteProvider"
+            android:authorities="com.example.vipul.notes"
+            android:exported="false" />
+
     </application>
 
 </manifest>

@@ -1,54 +1,45 @@
 package com.example.vipul.notes;
 
-import android.content.ContentValues;
+
+import android.app.LoaderManager;
+import android.content.ContentUris;
+import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.Loader;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import com.example.vipul.notes.data.NotesContract;
-import com.example.vipul.notes.data.NotesDbHelper;
 
-import java.util.ArrayList;
+public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
-public class MainActivity extends AppCompatActivity {
+    /**
+     * Identifier for the note data loader
+     */
+    final int NOTE_LOADER = 0;
 
-
-   /* static ArrayList<String> notes = new ArrayList<>();
-    static ArrayAdapter arrayAdapter;*/
-    NotesDbHelper notesDbHelper;
+    /**
+     * Adapter for the ListView
+     */
+    NotesCursorAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-       /*notes.add("example note");
-
-        ListView listView = findViewById(R.id.listView);
-        arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_expandable_list_item_1, notes);
-        listView.setAdapter(arrayAdapter);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent intent = new Intent(MainActivity.this, EditorActivity.class);
-                intent.putExtra("noteId",position);
-                startActivity(intent);
-            }
-        });*/
         FloatingActionButton fab = findViewById(R.id.fab_create);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -58,72 +49,37 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-       notesDbHelper = new NotesDbHelper(this);
-       SQLiteDatabase db = notesDbHelper.getReadableDatabase();
+        ListView listView = findViewById(R.id.list_view);
 
-    }
+        View emptyView = findViewById(R.id.empty_view);
+        listView.setEmptyView(emptyView);
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        displayDatabaseInfo();
-    }
+        adapter = new NotesCursorAdapter(this, null, 0);
+        listView.setAdapter(adapter);
 
-    private void displayDatabaseInfo() {
+        // Setup the item click listener
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                // Create new intent to go to {@link EditorActivity}
+                Intent intent = new Intent(MainActivity.this, EditorActivity.class);
 
-        SQLiteDatabase db = notesDbHelper.getReadableDatabase();
+                // Form the content URI that represents the specific pet that was clicked on,
+                // by appending the "id" (passed as input to this method) onto the
+                // {@link NoteEntry#CONTENT_URI}.
+                // For example, the URI would be "content://com.example.android.notes/note/2"
+                // if the pet with ID 2 was clicked on.
+                Uri currentNoteUri = ContentUris.withAppendedId(NotesContract.NotesEntry.CONTENT_URI, id);
 
-        String[] projection={
-                NotesContract.NotesEntry._ID,
-                NotesContract.NotesEntry.COLUMN_NAME_TITLE
-        };
+                // Set the URI on the data field of the intent
+                intent.setData(currentNoteUri);
 
-        Cursor cursor = db.query(
-                NotesContract.NotesEntry.TABLE_NAME,
-                projection,
-                null,
-                null,
-                null,
-                null,
-                null
-        );
-
-        try {
-
-            TextView displayView = findViewById(R.id.displayView);
-
-
-            int titleIndex = cursor.getColumnIndex("title");
-            int idIndex = cursor.getColumnIndex(NotesContract.NotesEntry._ID);
-
-            String titleString, idString, resultString;
-
-            while(cursor.moveToNext()) {
-
-                    idString = cursor.getString(idIndex);
-                    titleString = cursor.getString(titleIndex);
-
-                    resultString = "\n"+ idString+ " " + titleString;
-                    displayView.append(resultString);
-
+                // Launch the {@link EditorActivity} to display the data for the current pet.
+                startActivity(intent);
             }
-        } finally {
-
-            cursor.close();
-        }
-
-    }
-
-    private void insertNote() {
-        // Gets the data repository in write mode
-        SQLiteDatabase db = notesDbHelper.getWritableDatabase();
-
-        ContentValues values = new ContentValues();
-        values.put(NotesContract.NotesEntry.COLUMN_NAME_TITLE, "hkdsjaeqw fs");
-        values.put(NotesContract.NotesEntry.COLUMN_NAME_CONTENT, "lasue oueq e");
-
-        long newRowId = db.insert(NotesContract.NotesEntry.TABLE_NAME, null, values);
-        Log.v("CatalogActivity", String.valueOf(newRowId));
+        });
+        // Kick off the loader
+        getLoaderManager().initLoader(NOTE_LOADER, null, this);
     }
 
     @Override
@@ -142,12 +98,40 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_create_note) {
-           // insertNote();
-            //displayDatabaseInfo();
+            Intent intent = new Intent(MainActivity.this, EditorActivity.class);
+            startActivity(intent);
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        String[] projection = {
+                NotesContract.NotesEntry._ID,
+                NotesContract.NotesEntry.COLUMN_NAME_TITLE,
+                NotesContract.NotesEntry.COLUMN_NAME_CONTENT
+        };
+
+        return new CursorLoader(this,
+                NotesContract.NotesEntry.CONTENT_URI,
+                projection,
+                null,
+                null,
+                null
+        );
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        // Update {@link NoteCursorAdapter} with this new cursor containing updated pet data
+        adapter.swapCursor(data);
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        // Callback called when the data needs to be deleted
+        adapter.swapCursor(null);
+    }
 }
